@@ -1,18 +1,20 @@
 package de.edward;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.Properties;
+        import java.time.Instant;
+        import java.util.Date;
+        import java.util.Properties;
+
+        import java.sql.Connection;
+        import java.sql.PreparedStatement;
+        import java.sql.ResultSet;
+        import java.sql.SQLException;
+        import java.sql.Timestamp;
 
 /**
- * Die Haupt- und Main-Klasse dieses {@link DatabaseTest Test-Projekts}, mit dessen Hilfe eine stabile Verbindung zu
+ * Die Haupt- und Main-Klasse dieses {@link DatabaseDAV Test-Projekts}, mit dessen Hilfe eine stabile Verbindung zu
  * einer Datenbank hergestellt werden soll.
  */
-public final class DatabaseTest {
+public final class DatabaseDAV {
 
     //<editor-fold desc="CONSTANTS">
     /** Der Pool-Name, mit dem der {@link DatabaseHandler} initialisiert wird. */
@@ -53,36 +55,20 @@ public final class DatabaseTest {
         );
 
         // create table
-        createTestTable();
+        createDAVTable();
 
         // insert values
         try {
             int i = 0;
-            insertValues("Name1", i += 2);
+            insertValues("Atkins", "Käthe", "w", 2001-1-01, "c");
             Thread.sleep(100);
-            insertValues("Name2", i += 2);
-            Thread.sleep(100);
-              insertValues("Name3", i += 2);
-            Thread.sleep(100);
-            insertValues("Name4", i += 2);
-            Thread.sleep(100);
-            insertValues("Name5", i += 2);
-            Thread.sleep(100);
-            insertValues("Name6", i += 2);
-            Thread.sleep(100);
-            insertValues("Name7", i += 2);
-            Thread.sleep(100);
-            insertValues("Name8", i += 2);
-            Thread.sleep(100);
-            insertValues("Name9", i += 2);
-            Thread.sleep(100);
-            insertValues("Name10", i += 2);
+            insertValues("fatchi", "now/shall", "adverb", "marker for imperative mood");
         } catch (final InterruptedException e) {
             throw new RuntimeException(e);
         }
 
         // get the newest name
-        System.out.println(getNewestName());
+        System.out.println(getNewestEntry());
     }
     //</editor-fold>
 
@@ -101,14 +87,17 @@ public final class DatabaseTest {
     /**
      * Erzeugt eine Test-Tabelle
      */
-    private static void createTestTable() {
+    private static void createDAVTable() {
         try (final Connection conn = getDatabaseHandler().getConnection()) {
             final PreparedStatement stmt = conn.prepareStatement(
-                    "CREATE TABLE IF NOT EXISTS testTable("
-                            + "userName VARCHAR(255) PRIMARY KEY, "
-                            + "age INT, "
+                    "CREATE TABLE IF NOT EXISTS DAVTable("
+                            + "name VARCHAR(255) PRIMARY KEY, "
+                            + "vorname VARCHAR(255), "
+                            + "geschlecht VARCHAR(1), "
+                            + "geburtsdatum DATE, "
+                            + "disziplin VARCHAR(1), "
                             + "date DATETIME(1)"
-                            + ")"
+                            + ")" //I'm not entirely sure, I know what i'm doing...
             );
 
             stmt.executeUpdate();
@@ -123,21 +112,27 @@ public final class DatabaseTest {
      * verwendet werden, wird einfach nur der Zeitstempel aktualisiert.
      *
      * @param name Der Name, welcher für diesen Eintrag genutzt werden soll.
-     * @param age  Das Alter, welches für diesen Eintrag genutzt werden soll.
+     * @param vorname  Das Alter, welches für diesen Eintrag genutzt werden soll.
      */
     private static void insertValues(
             final String name,
-            final int age
+            final String vorname,
+            final String geschlecht,
+            final Date geburtsdatum,
+            final String disziplin
     ) {
         try (final Connection conn = getDatabaseHandler().getConnection()) {
             final PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO testTable (userName, age, date) VALUES (?, @age:=?, @date:=?) "
-                            + "ON DUPLICATE KEY UPDATE date=@date, age=@age"
+                    "INSERT INTO DAVTable (name, vorname, geschlecht, geburtsdatum, date) VALUES (@name:=?, @vorname:=?, @geschlecht:=?, @geburtsdatum:=?, @disziplin:=?, @date:=?) "
+                            + "ON DUPLICATE KEY UPDATE date=@date, disziplin=@disziplin, geburtsdatum=@geburtsdatum, geschlecht=@geschlecht, vorname=@vorname"
             );
 
             stmt.setString(1, name);
-            stmt.setInt(2, age);
-            stmt.setTimestamp(3, Timestamp.from(Instant.now()));
+            stmt.setString(2, vorname);
+            stmt.setString(3, geschlecht);
+            stmt.setTimestamp(4, geburtsdatum);
+            stmt.setString(5, disziplin);
+            stmt.setTimestamp(6, Timestamp.from(Instant.now()));
 
             stmt.executeUpdate();
         } catch (final SQLException e) {
@@ -150,10 +145,10 @@ public final class DatabaseTest {
      *
      * @return Der Name, der zuletzt eingefügt wurde in der Datenbank.
      */
-    private static String getNewestName() {
+    private static String getNewestEntry() {
         try (final Connection conn = getDatabaseHandler().getConnection()) {
             final PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT userName as name FROM testTable WHERE date IS NOT NULL ORDER BY date DESC"
+                    "SELECT name as name FROM DAVTable WHERE date IS NOT NULL ORDER BY date DESC"
             );
 
             final ResultSet rs = stmt.executeQuery();

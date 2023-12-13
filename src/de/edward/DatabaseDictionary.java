@@ -1,18 +1,22 @@
 package de.edward;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Instant;
 import java.util.Properties;
 
+import java.sql.Connection;
+        import java.sql.PreparedStatement;
+        import java.sql.ResultSet;
+        import java.sql.SQLException;
+        import java.sql.Timestamp;
+        import java.time.Instant;
+        import java.util.Properties;
+
 /**
- * Die Haupt- und Main-Klasse dieses {@link DatabaseTest Test-Projekts}, mit dessen Hilfe eine stabile Verbindung zu
+ * Die Haupt- und Main-Klasse dieses {@link DatabaseDictionary Test-Projekts}, mit dessen Hilfe eine stabile Verbindung zu
  * einer Datenbank hergestellt werden soll.
  */
-public final class DatabaseTest {
+public final class DatabaseDictionary {
 
     //<editor-fold desc="CONSTANTS">
     /** Der Pool-Name, mit dem der {@link DatabaseHandler} initialisiert wird. */
@@ -53,36 +57,20 @@ public final class DatabaseTest {
         );
 
         // create table
-        createTestTable();
+        createdictionaryTable();
 
         // insert values
         try {
             int i = 0;
-            insertValues("Name1", i += 2);
+            insertValues("tchó", "person", "noun", "general definition for individual humans");
             Thread.sleep(100);
-            insertValues("Name2", i += 2);
-            Thread.sleep(100);
-              insertValues("Name3", i += 2);
-            Thread.sleep(100);
-            insertValues("Name4", i += 2);
-            Thread.sleep(100);
-            insertValues("Name5", i += 2);
-            Thread.sleep(100);
-            insertValues("Name6", i += 2);
-            Thread.sleep(100);
-            insertValues("Name7", i += 2);
-            Thread.sleep(100);
-            insertValues("Name8", i += 2);
-            Thread.sleep(100);
-            insertValues("Name9", i += 2);
-            Thread.sleep(100);
-            insertValues("Name10", i += 2);
+            insertValues("fatchi", "now/shall", "adverb", "marker for imperative mood");
         } catch (final InterruptedException e) {
             throw new RuntimeException(e);
         }
 
         // get the newest name
-        System.out.println(getNewestName());
+        System.out.println(getNewestWord());
     }
     //</editor-fold>
 
@@ -101,14 +89,16 @@ public final class DatabaseTest {
     /**
      * Erzeugt eine Test-Tabelle
      */
-    private static void createTestTable() {
+    private static void createdictionaryTable() {
         try (final Connection conn = getDatabaseHandler().getConnection()) {
             final PreparedStatement stmt = conn.prepareStatement(
-                    "CREATE TABLE IF NOT EXISTS testTable("
-                            + "userName VARCHAR(255) PRIMARY KEY, "
-                            + "age INT, "
+                    "CREATE TABLE IF NOT EXISTS dictionaryTable("
+                            + "strangWord VARCHAR(255) PRIMARY KEY, "
+                            + "engWord VARCHAR(255), "
+                            + "type VARCHAR(255), "
+                            + "definition VARCHAR(255), "
                             + "date DATETIME(1)"
-                            + ")"
+                            + ")" //I'm not entirely sure, I know what i'm doing...
             );
 
             stmt.executeUpdate();
@@ -122,22 +112,26 @@ public final class DatabaseTest {
      * Zeitpunkt nicht mit übergeben wird, da immer der aktuelle Zeitpunkt gewählt wird. Sollte der Name bereits
      * verwendet werden, wird einfach nur der Zeitstempel aktualisiert.
      *
-     * @param name Der Name, welcher für diesen Eintrag genutzt werden soll.
-     * @param age  Das Alter, welches für diesen Eintrag genutzt werden soll.
+     * @param strangWord Der Name, welcher für diesen Eintrag genutzt werden soll.
+     * @param engWord  Das Alter, welches für diesen Eintrag genutzt werden soll.
      */
     private static void insertValues(
-            final String name,
-            final int age
+            final String strangWord,
+            final String engWord,
+            final String type,
+            final String definition
     ) {
         try (final Connection conn = getDatabaseHandler().getConnection()) {
             final PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO testTable (userName, age, date) VALUES (?, @age:=?, @date:=?) "
-                            + "ON DUPLICATE KEY UPDATE date=@date, age=@age"
+                    "INSERT INTO dictionaryTable (strangWord, engWord, type, definition, date) VALUES (@strangWord:=?, @engWord:=?, @type:=?, @definition:=?, @date:=?) "
+                            + "ON DUPLICATE KEY UPDATE date=@date, definition=@definition, type=@type, engWord=@engWord"
             );
 
-            stmt.setString(1, name);
-            stmt.setInt(2, age);
-            stmt.setTimestamp(3, Timestamp.from(Instant.now()));
+            stmt.setString(1, strangWord);
+            stmt.setString(2, engWord);
+            stmt.setString(3, type);
+            stmt.setString(4, definition);
+            stmt.setTimestamp(5, Timestamp.from(Instant.now()));
 
             stmt.executeUpdate();
         } catch (final SQLException e) {
@@ -150,16 +144,16 @@ public final class DatabaseTest {
      *
      * @return Der Name, der zuletzt eingefügt wurde in der Datenbank.
      */
-    private static String getNewestName() {
+    private static String getNewestWord() {
         try (final Connection conn = getDatabaseHandler().getConnection()) {
             final PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT userName as name FROM testTable WHERE date IS NOT NULL ORDER BY date DESC"
+                    "SELECT strangWord as strangWord FROM dictionaryTable WHERE date IS NOT NULL ORDER BY date DESC"
             );
 
             final ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                return rs.getString("name");
+                return rs.getString("strangWord");
             }
         } catch (final SQLException e) {
             e.printStackTrace();
